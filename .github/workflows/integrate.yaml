@@ -39,7 +39,9 @@ jobs:
         run: sudo service mongodb status
 
       - name: Create database
-        run: mongo --eval 'db.getSiblingDB("lnp2pbot").createCollection("mycollection")'
+        run: |
+          sleep 10
+          mongo --eval 'db.getSiblingDB("lnp2pbot").createCollection("mycollection")'
 
       - run: npm ci
       - name: Run tests
