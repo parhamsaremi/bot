@@ -32,7 +32,7 @@ jobs:
       - run: sudo apt-get update
       - run: sudo apt-get install -y mongodb
       - run: mongod --version
-      - run: sudo apt-get install -y mongodb-org
+      - run: sudo apt-get -o Dpkg::Options::="--force-overwrite" install -y mongodb-org
       # - run: mongod --version
       - run: sudo service mongodb start
       - name: Verify that MongoDB has started successfully
