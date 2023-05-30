@@ -34,14 +34,14 @@ jobs:
       - run: mongod --version
       - run: sudo apt-get -o Dpkg::Options::="--force-overwrite" install -y mongodb-org
       - run: mongod --version
-      - run: sudo service mongod start
+      - run: sudo service mongodb start
       - name: Verify that MongoDB has started successfully
-        run: sudo service mongod status
+        run: sudo service mongodb status
 
       - name: Create database
         run: |
           sleep 10
-          mongo --eval 'db.getSiblingDB("lnp2pbot").createCollection("mycollection")'
+          mongosh --eval 'db.getSiblingDB("lnp2pbot").createCollection("mycollection")'
 
       - run: npm ci
       - name: Run tests
