@@ -33,9 +33,9 @@ jobs:
       - run: sudo apt-get install -y mongodb-org
       - run: mongod --version
 
-      - name: Start MongoDB
-        run: mongod
-
+      - run: sudo mkdir -p /data/db 
+      - run: sudo mkdir -p /data/db/log
+      - run: mongod --dbpath /data/db --fork --logpath /data/db/log
       - name: Verify that MongoDB has started successfully
         run: sudo service mongod status
 
