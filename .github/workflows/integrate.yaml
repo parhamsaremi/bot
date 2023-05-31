@@ -10,5 +10,7 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: 14.x
+      - run: npm install @types/node @types/i18n
+      - run: tsc
       - run: npm ci
       - run: npm test
