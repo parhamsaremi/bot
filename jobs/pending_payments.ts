@@ -3,9 +3,10 @@ import { PendingPayment, Order, User, Community } from '../models';
 import messages from '../bot/messages';
 import { getUserI18nContext } from '../util';
 import logger from '../logger';
+import { Telegraf } from 'telegraf';
 import { I18nContext } from '@grammyjs/i18n/dist/source';
 
-exports.attemptPendingPayments = async (bot): Promise<void> => {
+exports.attemptPendingPayments = async (bot: Telegraf): Promise<void> => {
   const pendingPayments = await PendingPayment.find({
     paid: false,
     attempts: { $lt: process.env.PAYMENT_ATTEMPTS },
@@ -109,7 +110,7 @@ exports.attemptPendingPayments = async (bot): Promise<void> => {
   }
 };
 
-exports.attemptCommunitiesPendingPayments = async (bot): Promise<void> => {
+exports.attemptCommunitiesPendingPayments = async (bot: Telegraf): Promise<void> => {
   const pendingPayments = await PendingPayment.find({
     paid: false,
     attempts: { $lt: process.env.PAYMENT_ATTEMPTS },

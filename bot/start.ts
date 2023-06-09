@@ -1,4 +1,4 @@
-const { Telegraf, session } = require('telegraf');
+import { Telegraf, session, Context } from 'telegraf';
 import { I18n } from '@grammyjs/i18n';
 import { limit } from '@grammyjs/ratelimiter';
 import schedule from 'node-schedule';
@@ -162,7 +162,7 @@ const initialize = (botToken: string, options: any) => {
     await deleteCommunity(bot);
   });
 
-  bot.start(async ctx => {
+  bot.start(async (ctx: Context) => {
     try {
       const tgUser = ctx.update.message.from;
       if (!tgUser.username) return await messages.nonHandleErrorMessage(ctx);
@@ -174,7 +174,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.command('maintenance', superAdminMiddleware, async (ctx): Promise<void> => {
+  bot.command('maintenance', superAdminMiddleware, async (ctx: Context): Promise<void> => {
     try {
       const [val] = await validateParams(ctx, 2, '\\<_on/off_\\>');
       if (!val) return;
@@ -193,7 +193,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.on('text', userMiddleware, async (ctx, next: () => void) => {
+  bot.on('text', userMiddleware, async (ctx: Context, next: () => void) => {
     try {
       const config = await Config.findOne({ maintenance: true });
       if (config) {
@@ -206,7 +206,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.command('version', async ctx => {
+  bot.command('version', async (ctx: Context) => {
     try {
       const pckg = require('../package.json');
       await ctx.reply(pckg.version);
@@ -220,15 +220,15 @@ const initialize = (botToken: string, options: any) => {
   CommunityModule.configure(bot);
   LanguageModule.configure(bot);
 
-  bot.action('takesell', userMiddleware, async ctx => {
+  bot.action('takesell', userMiddleware, async (ctx: Context) => {
     await takesell(ctx, bot);
   });
 
-  bot.action('takebuy', userMiddleware, async ctx => {
+  bot.action('takebuy', userMiddleware, async (ctx: Context) => {
     await takebuy(ctx, bot);
   });
 
-  bot.command('release', userMiddleware, async ctx => {
+  bot.command('release', userMiddleware, async (ctx: Context) => {
     try {
       const params = ctx.update.message.text.split(' ');
       const [command, orderId] = params.filter(el => el);
@@ -250,7 +250,7 @@ const initialize = (botToken: string, options: any) => {
 
   DisputeModule.configure(bot);
 
-  bot.command('cancelorder', adminMiddleware, async ctx => {
+  bot.command('cancelorder', adminMiddleware, async (ctx: Context) => {
     try {
       const [orderId] = await validateParams(ctx, 2, '\\<_order id_\\>');
 
@@ -316,7 +316,7 @@ const initialize = (botToken: string, options: any) => {
 
   // We allow users cancel pending orders,
   // pending orders are the ones that are not taken by another user
-  bot.command('cancel', userMiddleware, async ctx => {
+  bot.command('cancel', userMiddleware, async (ctx: Context) => {
     try {
       const params = ctx.update.message.text.split(' ');
       const [command, orderId] = params.filter(el => el);
@@ -338,7 +338,7 @@ const initialize = (botToken: string, options: any) => {
 
   // We allow users cancel all pending orders,
   // pending orders are the ones that are not taken by another user
-  bot.command('cancelall', userMiddleware, async ctx => {
+  bot.command('cancelall', userMiddleware, async (ctx: Context) => {
     try {
       const orders = await ordersActions.getOrders(ctx, ctx.user, 'PENDING');
 
@@ -358,7 +358,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.command('settleorder', adminMiddleware, async ctx => {
+  bot.command('settleorder', adminMiddleware, async (ctx: Context) => {
     try {
       const [orderId] = await validateParams(ctx, 2, '\\<_order id_\\>');
 
@@ -415,7 +415,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.command('checkorder', superAdminMiddleware, async ctx => {
+  bot.command('checkorder', superAdminMiddleware, async (ctx: Context) => {
     try {
       const [orderId] = await validateParams(ctx, 2, '\\<_order id_\\>');
       if (!orderId) return;
@@ -433,7 +433,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.command('resubscribe', superAdminMiddleware, async ctx => {
+  bot.command('resubscribe', superAdminMiddleware, async (ctx: Context) => {
     try {
       const [hash] = await validateParams(ctx, 2, '\\<_hash_\\>');
 
@@ -449,7 +449,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.command('help', userMiddleware, async ctx => {
+  bot.command('help', userMiddleware, async (ctx: Context) => {
     try {
       await messages.helpMessage(ctx);
     } catch (error) {
@@ -458,7 +458,7 @@ const initialize = (botToken: string, options: any) => {
   });
 
   // Only buyers can use this command
-  bot.command('fiatsent', userMiddleware, async ctx => {
+  bot.command('fiatsent', userMiddleware, async (ctx: Context) => {
     try {
       const params = ctx.update.message.text.split(' ');
       const [command, orderId] = params.filter(el => el);
@@ -478,7 +478,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.command('ban', adminMiddleware, async ctx => {
+  bot.command('ban', adminMiddleware, async (ctx: Context) => {
     try {
       let [username] = await validateParams(ctx, 2, '\\<_username_\\>');
 
@@ -516,7 +516,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.command('unban', adminMiddleware, async ctx => {
+  bot.command('unban', adminMiddleware, async (ctx: Context) => {
     try {
       let [username] = await validateParams(ctx, 2, '\\<_username_\\>');
 
@@ -553,7 +553,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.command('setaddress', userMiddleware, async ctx => {
+  bot.command('setaddress', userMiddleware, async (ctx: Context) => {
     try {
       const [lightningAddress] = await validateParams(
         ctx,
@@ -580,7 +580,7 @@ const initialize = (botToken: string, options: any) => {
   });
 
   // Only buyers can use this command
-  bot.command('setinvoice', userMiddleware, async ctx => {
+  bot.command('setinvoice', userMiddleware, async (ctx: Context) => {
     try {
       const [orderId, lnInvoice] = await validateParams(
         ctx,
@@ -658,46 +658,46 @@ const initialize = (botToken: string, options: any) => {
 
   OrdersModule.configure(bot);
 
-  bot.action('addInvoiceBtn', userMiddleware, async ctx => {
+  bot.action('addInvoiceBtn', userMiddleware, async (ctx: Context) => {
     await addInvoice(ctx, bot);
   });
 
-  bot.action('cancelAddInvoiceBtn', userMiddleware, async ctx => {
+  bot.action('cancelAddInvoiceBtn', userMiddleware, async (ctx: Context) => {
     await cancelAddInvoice(ctx);
   });
 
-  bot.action('showHoldInvoiceBtn', userMiddleware, async ctx => {
+  bot.action('showHoldInvoiceBtn', userMiddleware, async (ctx: Context) => {
     await showHoldInvoice(ctx, bot);
   });
 
-  bot.action('cancelShowHoldInvoiceBtn', userMiddleware, async ctx => {
+  bot.action('cancelShowHoldInvoiceBtn', userMiddleware, async (ctx: Context) => {
     await cancelShowHoldInvoice(ctx);
   });
 
-  bot.action(/^showStarBtn\(([1-5]),(\w{24})\)$/, userMiddleware, async ctx => {
+  bot.action(/^showStarBtn\(([1-5]),(\w{24})\)$/, userMiddleware, async (ctx: Context) => {
     await rateUser(ctx, bot, ctx.match[1], ctx.match[2]);
   });
 
-  bot.action(/^addInvoicePHIBtn_([0-9a-f]{24})$/, userMiddleware, async ctx => {
+  bot.action(/^addInvoicePHIBtn_([0-9a-f]{24})$/, userMiddleware, async (ctx: Context) => {
     await addInvoicePHI(ctx, bot, ctx.match[1]);
   });
 
-  bot.action(/^cancel_([0-9a-f]{24})$/, userMiddleware, async ctx => {
+  bot.action(/^cancel_([0-9a-f]{24})$/, userMiddleware, async (ctx: Context) => {
     ctx.deleteMessage();
     await cancelOrder(ctx, ctx.match[1]);
   });
 
-  bot.action(/^fiatsent_([0-9a-f]{24})$/, userMiddleware, async ctx => {
+  bot.action(/^fiatsent_([0-9a-f]{24})$/, userMiddleware, async (ctx: Context) => {
     ctx.deleteMessage();
     await fiatSent(ctx, ctx.match[1]);
   });
 
-  bot.action(/^release_([0-9a-f]{24})$/, userMiddleware, async ctx => {
+  bot.action(/^release_([0-9a-f]{24})$/, userMiddleware, async (ctx: Context) => {
     ctx.deleteMessage();
     await release(ctx, ctx.match[1]);
   });
 
-  bot.command('paytobuyer', superAdminMiddleware, async ctx => {
+  bot.command('paytobuyer', superAdminMiddleware, async (ctx: Context) => {
     try {
       const [orderId] = await validateParams(ctx, 2, '\\<_order id_\\>');
       if (!orderId) return;
@@ -721,7 +721,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.command('listcurrencies', userMiddleware, async ctx => {
+  bot.command('listcurrencies', userMiddleware, async (ctx: Context) => {
     try {
       const currencies = getCurrenciesWithPrice();
 
@@ -731,7 +731,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.command('info', userMiddleware, async ctx => {
+  bot.command('info', userMiddleware, async (ctx: Context) => {
     try {
       await messages.showInfoMessage(bot, ctx.user);
     } catch (error) {
@@ -739,7 +739,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.command('showusername', userMiddleware, async ctx => {
+  bot.command('showusername', userMiddleware, async (ctx: Context) => {
     try {
       let [show] = await validateParams(ctx, 2, '_yes/no_');
       if (!show) return;
@@ -752,7 +752,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.command('showvolume', userMiddleware, async ctx => {
+  bot.command('showvolume', userMiddleware, async (ctx: Context) => {
     try {
       let [show] = await validateParams(ctx, 2, '_yes/no_');
       if (!show) return;
@@ -765,7 +765,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.command('exit', userMiddleware, async ctx => {
+  bot.command('exit', userMiddleware, async (ctx: Context) => {
     try {
       if (ctx.message.chat.type !== 'private') return;
 
@@ -775,7 +775,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.on('text', userMiddleware, async ctx => {
+  bot.on('text', userMiddleware, async (ctx: Context) => {
     try {
       if (ctx.message.chat.type !== 'private') return;
 
