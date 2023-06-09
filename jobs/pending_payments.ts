@@ -1,8 +1,9 @@
-const { payRequest, isPendingPayment } = require('../ln');
-const { PendingPayment, Order, User, Community } = require('../models');
-const messages = require('../bot/messages');
-const { getUserI18nContext } = require('../util');
-const logger = require('../logger');
+import { payRequest, isPendingPayment } from '../ln';
+import { PendingPayment, Order, User, Community } from '../models';
+import messages from '../bot/messages';
+import { getUserI18nContext } from '../util';
+import logger from '../logger';
+import { I18nContext } from '@grammyjs/i18n/dist/source';
 
 exports.attemptPendingPayments = async (bot): Promise<void> => {
   const pendingPayments = await PendingPayment.find({
@@ -22,10 +23,10 @@ exports.attemptPendingPayments = async (bot): Promise<void> => {
         return;
       }
       // We check if the old payment is on flight
-      const isPendingOldPayment = await isPendingPayment(order.buyer_invoice);
+      const isPendingOldPayment: boolean = await isPendingPayment(order.buyer_invoice);
 
       // We check if this new payment is on flight
-      const isPending = await isPendingPayment(pending.payment_request);
+      const isPending: boolean = await isPendingPayment(pending.payment_request);
 
       // If one of the payments is on flight we don't do anything
       if (isPending || isPendingOldPayment) return;
@@ -35,7 +36,7 @@ exports.attemptPendingPayments = async (bot): Promise<void> => {
         request: pending.payment_request,
       });
       const buyerUser = await User.findOne({ _id: order.buyer_id });
-      const i18nCtx = await getUserI18nContext(buyerUser);
+      const i18nCtx: I18nContext = await getUserI18nContext(buyerUser);
       // If the buyer's invoice is expired we let it know and don't try to pay again
       if (!!payment && payment.is_expired) {
         pending.is_invoice_expired = true;
@@ -99,7 +100,7 @@ exports.attemptPendingPayments = async (bot): Promise<void> => {
         );
       }
     } catch (error) {
-      const message = error.toString();
+      const message: string = error.toString();
       logger.error(`attemptPendingPayments catch error: ${message}`);
     } finally {
       await order.save();
@@ -121,7 +122,7 @@ exports.attemptCommunitiesPendingPayments = async (bot): Promise<void> => {
       pending.attempts++;
 
       // We check if this new payment is on flight
-      const isPending = await isPendingPayment(pending.payment_request);
+      const isPending: boolean = await isPendingPayment(pending.payment_request);
 
       // If the payments is on flight we don't do anything
       if (isPending) return;
@@ -131,7 +132,7 @@ exports.attemptCommunitiesPendingPayments = async (bot): Promise<void> => {
         request: pending.payment_request,
       });
       const user = await User.findById(pending.user_id);
-      const i18nCtx = await getUserI18nContext(user);
+      const i18nCtx: I18nContext = await getUserI18nContext(user);
       // If the buyer's invoice is expired we let it know and don't try to pay again
       if (!!payment && payment.is_expired) {
         pending.is_invoice_expired = true;

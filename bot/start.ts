@@ -1,38 +1,34 @@
-// import {
-//   type Context,
-//   type HearsContext,
-//   type MiddlewareFn,
-//   resolve,
-// } from "@types/i18n";
-/// <reference types="node" />
 const { Telegraf, session } = require('telegraf');
-const { I18n } = require('@grammyjs/i18n');
-const { limit } = require('@grammyjs/ratelimiter');
-const schedule = require('node-schedule');
-const {
+import { I18n } from '@grammyjs/i18n';
+import { limit } from '@grammyjs/ratelimiter';
+import schedule from 'node-schedule';
+import {
   Order,
   User,
   PendingPayment,
   Community,
   Dispute,
   Config,
-} = require('../models');
-const { getCurrenciesWithPrice, deleteOrderFromChannel } = require('../util');
-const {
+} from '../models';
+import {
+  getCurrenciesWithPrice,
+  deleteOrderFromChannel,
+} from '../util';
+import {
   commandArgsMiddleware,
   stageMiddleware,
   userMiddleware,
   adminMiddleware,
   superAdminMiddleware,
-} = require('./middleware');
-const ordersActions = require('./ordersActions');
-const CommunityModule = require('./modules/community');
-const LanguageModule = require('./modules/language');
-const NostrModule = require('./modules/nostr');
-const OrdersModule = require('./modules/orders');
-const UserModule = require('./modules/user');
-const DisputeModule = require('./modules/dispute');
-const {
+} from './middleware';
+import ordersActions from './ordersActions';
+import CommunityModule from './modules/community';
+import LanguageModule from './modules/language';
+import NostrModule from './modules/nostr';
+import OrdersModule from './modules/orders';
+import UserModule from './modules/user';
+import DisputeModule from './modules/dispute';
+import {
   takebuy,
   takesell,
   rateUser,
@@ -45,33 +41,38 @@ const {
   cancelOrder,
   fiatSent,
   release,
-} = require('./commands');
-const {
+} from './commands';
+import {
   settleHoldInvoice,
   cancelHoldInvoice,
   payToBuyer,
   isPendingPayment,
   subscribeInvoice,
-} = require('../ln');
-const {
+} from '../ln';
+import {
   validateUser,
   validateParams,
   validateObjectId,
   validateInvoice,
   validateLightningAddress,
-} = require('./validations');
-const messages = require('./messages');
-const {
+} from './validations';
+import messages from './messages';
+import {
   attemptPendingPayments,
   cancelOrders,
   deleteOrders,
   calculateEarnings,
   attemptCommunitiesPendingPayments,
   deleteCommunity,
-} = require('../jobs');
-const logger = require('../logger');
+} from '../jobs';
+import logger from '../logger';
 
-const askForConfirmation = async (user, command: string) => {
+interface User {
+  _id: string;
+  username: string;
+}
+
+const askForConfirmation = async (user: User, command: string) => {
   try {
     const where = {
       $and: [],
@@ -115,7 +116,7 @@ const askForConfirmation = async (user, command: string) => {
   }
 };
 
-const initialize = (botToken, options) => {
+const initialize = (botToken: string, options: any) => {
   const i18n = new I18n({
     defaultLanguageOnMissing: true, // implies allowMissing = true
     directory: 'locales',
@@ -123,7 +124,7 @@ const initialize = (botToken, options) => {
   });
 
   const bot = new Telegraf(botToken, options);
-  bot.catch(err => {
+  bot.catch((err: any) => {
     logger.error(err);
   });
 
@@ -192,7 +193,7 @@ const initialize = (botToken, options) => {
     }
   });
 
-  bot.on('text', userMiddleware, async (ctx, next) => {
+  bot.on('text', userMiddleware, async (ctx, next: () => void) => {
     try {
       const config = await Config.findOne({ maintenance: true });
       if (config) {
@@ -795,7 +796,7 @@ const initialize = (botToken, options) => {
   return bot;
 };
 
-const start = (botToken, options) => {
+const start = (botToken: string, options: any) => {
   const bot = initialize(botToken, options);
 
   bot.launch();
@@ -809,4 +810,4 @@ const start = (botToken, options) => {
   return bot;
 };
 
-module.exports = { initialize, start };
+export { initialize, start };
