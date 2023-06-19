@@ -1,34 +1,31 @@
 import { Telegraf, session, Context } from 'telegraf';
-import { I18n } from '@grammyjs/i18n';
-import { limit } from '@grammyjs/ratelimiter';
-import schedule from 'node-schedule';
-import {
+const { I18n } = require('@grammyjs/i18n');
+const { limit } = require('@grammyjs/ratelimiter');
+const schedule = require('node-schedule');
+const {
   Order,
   User,
   PendingPayment,
   Community,
   Dispute,
   Config,
-} from '../models';
-import {
-  getCurrenciesWithPrice,
-  deleteOrderFromChannel,
-} from '../util';
-import {
+} = require('../models');
+const { getCurrenciesWithPrice, deleteOrderFromChannel } = require('../util');
+const {
   commandArgsMiddleware,
   stageMiddleware,
   userMiddleware,
   adminMiddleware,
   superAdminMiddleware,
-} from './middleware';
-import ordersActions from './ordersActions';
-import CommunityModule from './modules/community';
-import LanguageModule from './modules/language';
-import NostrModule from './modules/nostr';
-import OrdersModule from './modules/orders';
-import UserModule from './modules/user';
-import DisputeModule from './modules/dispute';
-import {
+} = require('./middleware');
+const ordersActions = require('./ordersActions');
+const CommunityModule = require('./modules/community');
+const LanguageModule = require('./modules/language');
+const NostrModule = require('./modules/nostr');
+const OrdersModule = require('./modules/orders');
+const UserModule = require('./modules/user');
+const DisputeModule = require('./modules/dispute');
+const {
   takebuy,
   takesell,
   rateUser,
@@ -41,35 +38,56 @@ import {
   cancelOrder,
   fiatSent,
   release,
-} from './commands';
-import {
+} = require('./commands');
+const {
   settleHoldInvoice,
   cancelHoldInvoice,
   payToBuyer,
   isPendingPayment,
   subscribeInvoice,
-} from '../ln';
-import {
+} = require('../ln');
+const {
   validateUser,
   validateParams,
   validateObjectId,
   validateInvoice,
   validateLightningAddress,
-} from './validations';
-import messages from './messages';
-import {
+} = require('./validations');
+const messages = require('./messages');
+const {
   attemptPendingPayments,
   cancelOrders,
   deleteOrders,
   calculateEarnings,
   attemptCommunitiesPendingPayments,
   deleteCommunity,
-} from '../jobs';
-import logger from '../logger';
+} = require('../jobs');
+const logger = require('../logger');
 
 interface User {
-  _id: string;
-  username: string;
+  tg_id: string,
+  username: string,
+  lang: string,
+  trades_completed: Number,
+  total_reviews: { type: Number, min: 0, default: 0 },
+  last_rating: Number,
+  total_rating: Number,
+  volume_traded: Number,
+  admin: boolean,
+  banned: boolean,
+  show_username: boolean,
+  show_volume_traded: boolean,
+  lightning_address: string | null,
+  nostr_public_key: string,
+  disputes: Number,
+  created_at: Date,
+  default_community_id: string,
+}
+
+interface MyContext extends Context {
+  i18n: any;
+  user: User;
+  admin: User;
 }
 
 const askForConfirmation = async (user: User, command: string) => {
@@ -116,14 +134,14 @@ const askForConfirmation = async (user: User, command: string) => {
   }
 };
 
-const initialize = (botToken: string, options: any) => {
+const initialize = (botToken: string, options: any) : Telegraf<MyContext> => {
   const i18n = new I18n({
     defaultLanguageOnMissing: true, // implies allowMissing = true
     directory: 'locales',
     useSession: true,
   });
 
-  const bot = new Telegraf(botToken, options);
+  const bot = new Telegraf<MyContext>(botToken, options);
   bot.catch((err: any) => {
     logger.error(err);
   });
@@ -162,7 +180,7 @@ const initialize = (botToken: string, options: any) => {
     await deleteCommunity(bot);
   });
 
-  bot.start(async (ctx: Context) => {
+  bot.start(async (ctx) => {
     try {
       const tgUser = ctx.update.message.from;
       if (!tgUser.username) return await messages.nonHandleErrorMessage(ctx);
@@ -174,7 +192,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.command('maintenance', superAdminMiddleware, async (ctx: Context): Promise<void> => {
+  bot.command('maintenance', superAdminMiddleware, async (ctx): Promise<void> => {
     try {
       const [val] = await validateParams(ctx, 2, '\\<_on/off_\\>');
       if (!val) return;
@@ -193,7 +211,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.on('text', userMiddleware, async (ctx: Context, next: () => void) => {
+  bot.on('text', userMiddleware, async (ctx : MyContext, next: () => void) => {
     try {
       const config = await Config.findOne({ maintenance: true });
       if (config) {
@@ -206,7 +224,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.command('version', async (ctx: Context) => {
+  bot.command('version', async (ctx) => {
     try {
       const pckg = require('../package.json');
       await ctx.reply(pckg.version);
@@ -220,18 +238,18 @@ const initialize = (botToken: string, options: any) => {
   CommunityModule.configure(bot);
   LanguageModule.configure(bot);
 
-  bot.action('takesell', userMiddleware, async (ctx: Context) => {
+  bot.action('takesell', userMiddleware, async (ctx) => {
     await takesell(ctx, bot);
   });
 
-  bot.action('takebuy', userMiddleware, async (ctx: Context) => {
+  bot.action('takebuy', userMiddleware, async (ctx) => {
     await takebuy(ctx, bot);
   });
 
-  bot.command('release', userMiddleware, async (ctx: Context) => {
+  bot.command('release', userMiddleware, async (ctx) => {
     try {
       const params = ctx.update.message.text.split(' ');
-      const [command, orderId] = params.filter(el => el);
+      const [command, orderId] = params.filter((el : any) => el);
 
       if (!orderId) {
         const orders = await askForConfirmation(ctx.user, command);
@@ -250,7 +268,7 @@ const initialize = (botToken: string, options: any) => {
 
   DisputeModule.configure(bot);
 
-  bot.command('cancelorder', adminMiddleware, async (ctx: Context) => {
+  bot.command('cancelorder', adminMiddleware, async (ctx : MyContext) => {
     try {
       const [orderId] = await validateParams(ctx, 2, '\\<_order id_\\>');
 
@@ -316,10 +334,10 @@ const initialize = (botToken: string, options: any) => {
 
   // We allow users cancel pending orders,
   // pending orders are the ones that are not taken by another user
-  bot.command('cancel', userMiddleware, async (ctx: Context) => {
+  bot.command('cancel', userMiddleware, async (ctx : MyContext) => {
     try {
       const params = ctx.update.message.text.split(' ');
-      const [command, orderId] = params.filter(el => el);
+      const [command, orderId] = params.filter((el : any) => el);
 
       if (!orderId) {
         const orders = await askForConfirmation(ctx.user, command);
@@ -338,7 +356,7 @@ const initialize = (botToken: string, options: any) => {
 
   // We allow users cancel all pending orders,
   // pending orders are the ones that are not taken by another user
-  bot.command('cancelall', userMiddleware, async (ctx: Context) => {
+  bot.command('cancelall', userMiddleware, async (ctx : MyContext) => {
     try {
       const orders = await ordersActions.getOrders(ctx, ctx.user, 'PENDING');
 
@@ -358,7 +376,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.command('settleorder', adminMiddleware, async (ctx: Context) => {
+  bot.command('settleorder', adminMiddleware, async (ctx : MyContext) => {
     try {
       const [orderId] = await validateParams(ctx, 2, '\\<_order id_\\>');
 
@@ -415,7 +433,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.command('checkorder', superAdminMiddleware, async (ctx: Context) => {
+  bot.command('checkorder', superAdminMiddleware, async (ctx : MyContext) => {
     try {
       const [orderId] = await validateParams(ctx, 2, '\\<_order id_\\>');
       if (!orderId) return;
@@ -433,7 +451,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.command('resubscribe', superAdminMiddleware, async (ctx: Context) => {
+  bot.command('resubscribe', superAdminMiddleware, async (ctx : MyContext) => {
     try {
       const [hash] = await validateParams(ctx, 2, '\\<_hash_\\>');
 
@@ -444,12 +462,12 @@ const initialize = (botToken: string, options: any) => {
       if (!order) return;
       await subscribeInvoice(bot, hash, true);
       ctx.reply(`hash resubscribed`);
-    } catch (error) {
+    } catch (error : any) {
       logger.error(`/resubscribe command error: ${error.toString()}`);
     }
   });
 
-  bot.command('help', userMiddleware, async (ctx: Context) => {
+  bot.command('help', userMiddleware, async (ctx : MyContext) => {
     try {
       await messages.helpMessage(ctx);
     } catch (error) {
@@ -458,10 +476,10 @@ const initialize = (botToken: string, options: any) => {
   });
 
   // Only buyers can use this command
-  bot.command('fiatsent', userMiddleware, async (ctx: Context) => {
+  bot.command('fiatsent', userMiddleware, async (ctx : MyContext) => {
     try {
       const params = ctx.update.message.text.split(' ');
-      const [command, orderId] = params.filter(el => el);
+      const [command, orderId] = params.filter((el : any) => el);
 
       if (!orderId) {
         const orders = await askForConfirmation(ctx.user, command);
@@ -478,7 +496,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.command('ban', adminMiddleware, async (ctx: Context) => {
+  bot.command('ban', adminMiddleware, async (ctx : MyContext) => {
     try {
       let [username] = await validateParams(ctx, 2, '\\<_username_\\>');
 
@@ -516,7 +534,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.command('unban', adminMiddleware, async (ctx: Context) => {
+  bot.command('unban', adminMiddleware, async (ctx : MyContext) => {
     try {
       let [username] = await validateParams(ctx, 2, '\\<_username_\\>');
 
@@ -537,7 +555,7 @@ const initialize = (botToken: string, options: any) => {
             ctx.admin.default_community_id
           );
           community.banned_users = community.banned_users.filter(
-            el => el.id !== user.id
+            (el : any) => el.id !== user.id
           );
           await community.save();
         } else {
@@ -553,7 +571,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.command('setaddress', userMiddleware, async (ctx: Context) => {
+  bot.command('setaddress', userMiddleware, async (ctx : MyContext) => {
     try {
       const [lightningAddress] = await validateParams(
         ctx,
@@ -580,7 +598,7 @@ const initialize = (botToken: string, options: any) => {
   });
 
   // Only buyers can use this command
-  bot.command('setinvoice', userMiddleware, async (ctx: Context) => {
+  bot.command('setinvoice', userMiddleware, async (ctx : MyContext) => {
     try {
       const [orderId, lnInvoice] = await validateParams(
         ctx,
@@ -658,46 +676,46 @@ const initialize = (botToken: string, options: any) => {
 
   OrdersModule.configure(bot);
 
-  bot.action('addInvoiceBtn', userMiddleware, async (ctx: Context) => {
+  bot.action('addInvoiceBtn', userMiddleware, async (ctx : MyContext) => {
     await addInvoice(ctx, bot);
   });
 
-  bot.action('cancelAddInvoiceBtn', userMiddleware, async (ctx: Context) => {
+  bot.action('cancelAddInvoiceBtn', userMiddleware, async (ctx : MyContext) => {
     await cancelAddInvoice(ctx);
   });
 
-  bot.action('showHoldInvoiceBtn', userMiddleware, async (ctx: Context) => {
+  bot.action('showHoldInvoiceBtn', userMiddleware, async (ctx : MyContext) => {
     await showHoldInvoice(ctx, bot);
   });
 
-  bot.action('cancelShowHoldInvoiceBtn', userMiddleware, async (ctx: Context) => {
+  bot.action('cancelShowHoldInvoiceBtn', userMiddleware, async (ctx : MyContext) => {
     await cancelShowHoldInvoice(ctx);
   });
 
-  bot.action(/^showStarBtn\(([1-5]),(\w{24})\)$/, userMiddleware, async (ctx: Context) => {
+  bot.action(/^showStarBtn\(([1-5]),(\w{24})\)$/, userMiddleware, async (ctx : MyContext) => {
     await rateUser(ctx, bot, ctx.match[1], ctx.match[2]);
   });
 
-  bot.action(/^addInvoicePHIBtn_([0-9a-f]{24})$/, userMiddleware, async (ctx: Context) => {
+  bot.action(/^addInvoicePHIBtn_([0-9a-f]{24})$/, userMiddleware, async (ctx : MyContext) => {
     await addInvoicePHI(ctx, bot, ctx.match[1]);
   });
 
-  bot.action(/^cancel_([0-9a-f]{24})$/, userMiddleware, async (ctx: Context) => {
+  bot.action(/^cancel_([0-9a-f]{24})$/, userMiddleware, async (ctx : MyContext) => {
     ctx.deleteMessage();
     await cancelOrder(ctx, ctx.match[1]);
   });
 
-  bot.action(/^fiatsent_([0-9a-f]{24})$/, userMiddleware, async (ctx: Context) => {
+  bot.action(/^fiatsent_([0-9a-f]{24})$/, userMiddleware, async (ctx : MyContext) => {
     ctx.deleteMessage();
     await fiatSent(ctx, ctx.match[1]);
   });
 
-  bot.action(/^release_([0-9a-f]{24})$/, userMiddleware, async (ctx: Context) => {
+  bot.action(/^release_([0-9a-f]{24})$/, userMiddleware, async (ctx : MyContext) => {
     ctx.deleteMessage();
     await release(ctx, ctx.match[1]);
   });
 
-  bot.command('paytobuyer', superAdminMiddleware, async (ctx: Context) => {
+  bot.command('paytobuyer', superAdminMiddleware, async (ctx : MyContext) => {
     try {
       const [orderId] = await validateParams(ctx, 2, '\\<_order id_\\>');
       if (!orderId) return;
@@ -721,7 +739,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.command('listcurrencies', userMiddleware, async (ctx: Context) => {
+  bot.command('listcurrencies', userMiddleware, async (ctx : MyContext) => {
     try {
       const currencies = getCurrenciesWithPrice();
 
@@ -731,7 +749,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.command('info', userMiddleware, async (ctx: Context) => {
+  bot.command('info', userMiddleware, async (ctx : MyContext) => {
     try {
       await messages.showInfoMessage(bot, ctx.user);
     } catch (error) {
@@ -739,7 +757,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.command('showusername', userMiddleware, async (ctx: Context) => {
+  bot.command('showusername', userMiddleware, async (ctx : MyContext) => {
     try {
       let [show] = await validateParams(ctx, 2, '_yes/no_');
       if (!show) return;
@@ -752,7 +770,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.command('showvolume', userMiddleware, async (ctx: Context) => {
+  bot.command('showvolume', userMiddleware, async (ctx : MyContext) => {
     try {
       let [show] = await validateParams(ctx, 2, '_yes/no_');
       if (!show) return;
@@ -765,7 +783,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.command('exit', userMiddleware, async (ctx: Context) => {
+  bot.command('exit', userMiddleware, async (ctx : MyContext) => {
     try {
       if (ctx.message.chat.type !== 'private') return;
 
@@ -775,7 +793,7 @@ const initialize = (botToken: string, options: any) => {
     }
   });
 
-  bot.on('text', userMiddleware, async (ctx: Context) => {
+  bot.on('text', userMiddleware, async (ctx : MyContext) => {
     try {
       if (ctx.message.chat.type !== 'private') return;
 
@@ -796,7 +814,7 @@ const initialize = (botToken: string, options: any) => {
   return bot;
 };
 
-const start = (botToken: string, options: any) => {
+const start = (botToken: string, options: any) : Telegraf<MyContext> => {
   const bot = initialize(botToken, options);
 
   bot.launch();
