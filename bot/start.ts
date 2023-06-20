@@ -2,9 +2,10 @@ import { Telegraf, session, Context } from 'telegraf';
 const { I18n } = require('@grammyjs/i18n');
 const { limit } = require('@grammyjs/ratelimiter');
 const schedule = require('node-schedule');
+import { User } from '../models'; 
 const {
   Order,
-  User,
+  // User,
   PendingPayment,
   Community,
   Dispute,
@@ -64,26 +65,27 @@ const {
 } = require('../jobs');
 const logger = require('../logger');
 
-interface User {
-  tg_id: string,
-  username: string,
-  lang: string,
-  trades_completed: Number,
-  total_reviews: { type: Number, min: 0, default: 0 },
-  last_rating: Number,
-  total_rating: Number,
-  volume_traded: Number,
-  admin: boolean,
-  banned: boolean,
-  show_username: boolean,
-  show_volume_traded: boolean,
-  lightning_address: string | null,
-  nostr_public_key: string,
-  disputes: Number,
-  created_at: Date,
-  default_community_id: string,
-}
-
+// interface User {
+//   tg_id: string,
+//   username: string,
+//   lang: string,
+//   trades_completed: Number,
+//   total_reviews: { type: Number, min: 0, default: 0 },
+//   last_rating: Number,
+//   total_rating: Number,
+//   volume_traded: Number,
+//   admin: boolean,
+//   banned: boolean,
+//   show_username: boolean,
+//   show_volume_traded: boolean,
+//   lightning_address: string | null,
+//   nostr_public_key: string,
+//   disputes: Number,
+//   created_at: Date,
+//   default_community_id: string,
+// }
+import { Model, Document, DocumentType } from 'mongoose';
+type User = DocumentType<typeof User>
 interface MyContext extends Context {
   i18n: any;
   user: User;
