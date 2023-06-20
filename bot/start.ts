@@ -66,31 +66,12 @@ const {
 } = require('../jobs');
 const logger = require('../logger');
 import { Message } from 'typegram'
-// interface User {
-//   tg_id: string,
-//   username: string,
-//   lang: string,
-//   trades_completed: Number,
-//   total_reviews: { type: Number, min: 0, default: 0 },
-//   last_rating: Number,
-//   total_rating: Number,
-//   volume_traded: Number,
-//   admin: boolean,
-//   banned: boolean,
-//   show_username: boolean,
-//   show_volume_traded: boolean,
-//   lightning_address: string | null,
-//   nostr_public_key: string,
-//   disputes: Number,
-//   created_at: Date,
-//   default_community_id: string,
-// }
+
 import { Model, Document } from 'mongoose';
 import { UserDocument } from '../models/user'
-// type User = Document<User>
 
 interface MyContext extends Context {
-  match: any;
+  match: Array<string> | null;
   i18n: any;
   user: UserDocument;
   admin: UserDocument;
@@ -186,19 +167,21 @@ const initialize = (botToken: string, options: any) : Telegraf<MyContext> => {
     await deleteCommunity(bot);
   });
 
-  bot.start(async (ctx) => {
+  bot.start(async (ctx: MyContext) => {
     try {
-      const tgUser = ctx.update.message.from;
-      if (!tgUser.username) return await messages.nonHandleErrorMessage(ctx);
+      if ('message' in ctx.update && 'text' in ctx.update.message){
+        const tgUser = ctx.update.message.from;
+        if (!tgUser.username) return await messages.nonHandleErrorMessage(ctx);
 
-      messages.startMessage(ctx);
-      await validateUser(ctx, true);
+        messages.startMessage(ctx);
+        await validateUser(ctx, true);
+      }
     } catch (error) {
       logger.error(error);
     }
   });
 
-  bot.command('maintenance', superAdminMiddleware, async (ctx): Promise<void> => {
+  bot.command('maintenance', superAdminMiddleware, async (ctx: MyContext): Promise<void> => {
     try {
       const [val] = await validateParams(ctx, 2, '\\<_on/off_\\>');
       if (!val) return;
@@ -230,7 +213,7 @@ const initialize = (botToken: string, options: any) : Telegraf<MyContext> => {
     }
   });
 
-  bot.command('version', async (ctx) => {
+  bot.command('version', async (ctx: MyContext) => {
     try {
       const pckg = require('../package.json');
       await ctx.reply(pckg.version);
@@ -244,28 +227,30 @@ const initialize = (botToken: string, options: any) : Telegraf<MyContext> => {
   CommunityModule.configure(bot);
   LanguageModule.configure(bot);
 
-  bot.action('takesell', userMiddleware, async (ctx) => {
+  bot.action('takesell', userMiddleware, async (ctx: MyContext) => {
     await takesell(ctx, bot);
   });
 
-  bot.action('takebuy', userMiddleware, async (ctx) => {
+  bot.action('takebuy', userMiddleware, async (ctx: MyContext) => {
     await takebuy(ctx, bot);
   });
 
-  bot.command('release', userMiddleware, async (ctx) => {
+  bot.command('release', userMiddleware, async (ctx: MyContext) => {
     try {
-      const params = ctx.update.message.text.split(' ');
-      const [command, orderId] = params.filter((el : any) => el);
+      if ('message' in ctx.update && 'text' in ctx.update.message){
+        const params = ctx.update.message.text.split(' ');
+        const [command, orderId] = params.filter((el : any) => el);
 
-      if (!orderId) {
-        const orders = await askForConfirmation(ctx.user, command);
-        if (!orders.length) return await ctx.reply(`${command} <order Id>`);
+        if (!orderId) {
+          const orders = await askForConfirmation(ctx.user, command);
+          if (!orders.length) return await ctx.reply(`${command} <order Id>`);
 
-        return await messages.showConfirmationButtons(ctx, orders, command);
-      } else if (!(await validateObjectId(ctx, orderId))) {
-        return;
-      } else {
-        await release(ctx, orderId, ctx.user);
+          return await messages.showConfirmationButtons(ctx, orders, command);
+        } else if (!(await validateObjectId(ctx, orderId))) {
+          return;
+        } else {
+          await release(ctx, orderId, ctx.user);
+        }
       }
     } catch (error) {
       logger.error(error);
@@ -703,26 +688,36 @@ const initialize = (botToken: string, options: any) : Telegraf<MyContext> => {
   });
 
   bot.action(/^showStarBtn\(([1-5]),(\w{24})\)$/, userMiddleware, async (ctx : MyContext) => {
-    await rateUser(ctx, bot, ctx.match[1], ctx.match[2]);
+    if (ctx.match !== null) {
+      await rateUser(ctx, bot, ctx.match[1], ctx.match[2]);
+    }
   });
 
   bot.action(/^addInvoicePHIBtn_([0-9a-f]{24})$/, userMiddleware, async (ctx : MyContext) => {
-    await addInvoicePHI(ctx, bot, ctx.match[1]);
+    if (ctx.match !== null) {
+      await addInvoicePHI(ctx, bot, ctx.match[1]);
+    }
   });
 
   bot.action(/^cancel_([0-9a-f]{24})$/, userMiddleware, async (ctx : MyContext) => {
-    ctx.deleteMessage();
-    await cancelOrder(ctx, ctx.match[1]);
+    if (ctx.match !== null) {
+      ctx.deleteMessage();
+      await cancelOrder(ctx, ctx.match[1]);
+    }
   });
 
   bot.action(/^fiatsent_([0-9a-f]{24})$/, userMiddleware, async (ctx : MyContext) => {
-    ctx.deleteMessage();
-    await fiatSent(ctx, ctx.match[1]);
+    if (ctx.match !== null) {
+      ctx.deleteMessage();
+      await fiatSent(ctx, ctx.match[1]);
+    }
   });
 
   bot.action(/^release_([0-9a-f]{24})$/, userMiddleware, async (ctx : MyContext) => {
-    ctx.deleteMessage();
-    await release(ctx, ctx.match[1]);
+    if (ctx.match !== null) {
+      ctx.deleteMessage();
+      await release(ctx, ctx.match[1]);
+    }
   });
 
   bot.command('paytobuyer', superAdminMiddleware, async (ctx : MyContext) => {
