@@ -65,7 +65,7 @@ const {
   deleteCommunity,
 } = require('../jobs');
 const logger = require('../logger');
-
+import { Message } from 'typegram'
 // interface User {
 //   tg_id: string,
 //   username: string,
@@ -90,7 +90,8 @@ import { UserDocument } from '../models/user'
 // type User = Document<User>
 
 interface MyContext extends Context {
-  i18n: I18n;
+  match: any;
+  i18n: any;
   user: UserDocument;
   admin: UserDocument;
 }
@@ -341,18 +342,20 @@ const initialize = (botToken: string, options: any) : Telegraf<MyContext> => {
   // pending orders are the ones that are not taken by another user
   bot.command('cancel', userMiddleware, async (ctx : MyContext) => {
     try {
-      const params = ctx.update.message.text.split(' ');
-      const [command, orderId] = params.filter((el : any) => el);
+      if ('message' in ctx.update && 'text' in ctx.update.message){
+        const params = ctx.update.message.text.split(' ');
+        const [command, orderId] = params.filter((el : any) => el);
 
-      if (!orderId) {
-        const orders = await askForConfirmation(ctx.user, command);
-        if (!orders.length) return await ctx.reply(`${command}  <order Id>`);
+        if (!orderId) {
+          const orders = await askForConfirmation(ctx.user, command);
+          if (!orders.length) return await ctx.reply(`${command}  <order Id>`);
 
-        return await messages.showConfirmationButtons(ctx, orders, command);
-      } else if (!(await validateObjectId(ctx, orderId))) {
-        return;
-      } else {
-        await cancelOrder(ctx, orderId, ctx.user);
+          return await messages.showConfirmationButtons(ctx, orders, command);
+        } else if (!(await validateObjectId(ctx, orderId))) {
+          return;
+        } else {
+          await cancelOrder(ctx, orderId, ctx.user);
+        }
       }
     } catch (error) {
       logger.error(error);
@@ -483,18 +486,20 @@ const initialize = (botToken: string, options: any) : Telegraf<MyContext> => {
   // Only buyers can use this command
   bot.command('fiatsent', userMiddleware, async (ctx : MyContext) => {
     try {
-      const params = ctx.update.message.text.split(' ');
-      const [command, orderId] = params.filter((el : any) => el);
+      if ('message' in ctx.update && 'text' in ctx.update.message){
+        const params = ctx.update.message.text.split(' ');
+        const [command, orderId] = params.filter((el : any) => el);
 
-      if (!orderId) {
-        const orders = await askForConfirmation(ctx.user, command);
-        if (!orders.length) return await ctx.reply(`${command} <order Id>`);
+        if (!orderId) {
+          const orders = await askForConfirmation(ctx.user, command);
+          if (!orders.length) return await ctx.reply(`${command} <order Id>`);
 
-        return await messages.showConfirmationButtons(ctx, orders, command);
-      } else if (!(await validateObjectId(ctx, orderId))) {
-        return;
-      } else {
-        await fiatSent(ctx, orderId, ctx.user);
+          return await messages.showConfirmationButtons(ctx, orders, command);
+        } else if (!(await validateObjectId(ctx, orderId))) {
+          return;
+        } else {
+          await fiatSent(ctx, orderId, ctx.user);
+        }
       }
     } catch (error) {
       logger.error(error);
@@ -790,7 +795,7 @@ const initialize = (botToken: string, options: any) : Telegraf<MyContext> => {
 
   bot.command('exit', userMiddleware, async (ctx : MyContext) => {
     try {
-      if (ctx.message.chat.type !== 'private') return;
+      if (ctx.message?.chat.type !== 'private') return;
 
       await ctx.reply(ctx.i18n.t('not_wizard'));
     } catch (error) {
@@ -800,9 +805,9 @@ const initialize = (botToken: string, options: any) : Telegraf<MyContext> => {
 
   bot.on('text', userMiddleware, async (ctx : MyContext) => {
     try {
-      if (ctx.message.chat.type !== 'private') return;
+      if (ctx.message?.chat.type !== 'private') return;
 
-      const text = ctx.message.text;
+      const text = (ctx.message as Message.TextMessage).text;
       let message;
       // If the user is trying to enter a command with first letter uppercase
       if (text[0] === '/' && text[1] === text[1].toUpperCase()) {
