@@ -1,12 +1,13 @@
-const { payRequest, isPendingPayment } = require('../ln');
-const { PendingPayment, Order, User, Community } = require('../models');
-const messages = require('../bot/messages');
-const { getUserI18nContext } = require('../util');
-const logger = require('../logger');
+import { payRequest, isPendingPayment } from '../ln';
+import { PendingPayment, Order, User, Community } from '../models';
+import messages from '../bot/messages';
+import { getUserI18nContext } from '../util';
+import logger from '../logger';
 import { Telegraf } from 'telegraf';
-const { I18nContext } = require('@grammyjs/i18n/dist/source');
+import { I18nContext } from '@grammyjs/i18n';
+import { MyContext } from '../bot/start';
 
-exports.attemptPendingPayments = async (bot: Telegraf): Promise<void> => {
+exports.attemptPendingPayments = async (bot: Telegraf<MyContext>): Promise<void> => {
   const pendingPayments = await PendingPayment.find({
     paid: false,
     attempts: { $lt: process.env.PAYMENT_ATTEMPTS },
@@ -110,7 +111,7 @@ exports.attemptPendingPayments = async (bot: Telegraf): Promise<void> => {
   }
 };
 
-exports.attemptCommunitiesPendingPayments = async (bot: Telegraf): Promise<void> => {
+exports.attemptCommunitiesPendingPayments = async (bot: Telegraf<MyContext>): Promise<void> => {
   const pendingPayments = await PendingPayment.find({
     paid: false,
     attempts: { $lt: process.env.PAYMENT_ATTEMPTS },

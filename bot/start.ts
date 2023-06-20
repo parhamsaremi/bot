@@ -1,5 +1,5 @@
 import { Telegraf, session, Context } from 'telegraf';
-import { I18n } from '@grammyjs/i18n';
+import { I18n, I18nContext } from '@grammyjs/i18n';
 
 import { limit } from '@grammyjs/ratelimiter';
 import schedule from 'node-schedule';
@@ -69,9 +69,9 @@ import { Message } from 'typegram'
 import { Model, Document } from 'mongoose';
 import { UserDocument } from '../models/user'
 
-interface MyContext extends Context {
+export interface MyContext extends Context {
   match: Array<string> | null;
-  i18n: any;
+  i18n: I18nContext;
   user: UserDocument;
   admin: UserDocument;
 }
