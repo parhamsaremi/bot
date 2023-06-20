@@ -1,11 +1,12 @@
 import { Telegraf, session, Context } from 'telegraf';
-const { I18n } = require('@grammyjs/i18n');
+// const { I18n } = require('@grammyjs/i18n');
+import { I18n } from '@grammyjs/i18n';
 const { limit } = require('@grammyjs/ratelimiter');
 const schedule = require('node-schedule');
-import { User } from '../models'; 
+// import { User } from '../models'; 
 const {
   Order,
-  // User,
+  User,
   PendingPayment,
   Community,
   Dispute,
@@ -84,15 +85,17 @@ const logger = require('../logger');
 //   created_at: Date,
 //   default_community_id: string,
 // }
-import { Model, Document, DocumentType } from 'mongoose';
-type User = DocumentType<typeof User>
+import { Model, Document } from 'mongoose';
+import { UserDocument } from '../models/user'
+// type User = Document<User>
+
 interface MyContext extends Context {
-  i18n: any;
-  user: User;
-  admin: User;
+  i18n: I18n;
+  user: UserDocument;
+  admin: UserDocument;
 }
 
-const askForConfirmation = async (user: User, command: string) => {
+const askForConfirmation = async (user: UserDocument, command: string) => {
   try {
     const where = {
       $and: [],
