@@ -466,7 +466,7 @@ const initialize = (botToken: string, options: Partial<Telegraf.Options<MainCont
       if (!order) return;
       await subscribeInvoice(bot, hash, true);
       ctx.reply(`hash resubscribed`);
-    } catch (error) {
+    } catch (error: any) {
       logger.error(`/resubscribe command error: ${error.toString()}`);
     }
   });
@@ -562,7 +562,7 @@ const initialize = (botToken: string, options: Partial<Telegraf.Options<MainCont
             ctx.admin.default_community_id
           );
           community.banned_users = community.banned_users.filter(
-            (el) => el.id !== user.id
+            (el: any) => el.id !== user.id
           );
           await community.save();
         } else {
