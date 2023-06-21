@@ -1,32 +1,34 @@
 import { Telegraf, session, Context } from 'telegraf';
 import { I18n, I18nContext } from '@grammyjs/i18n';
+import { Message } from 'typegram'
+import { UserDocument } from '../models/user'
 
-import { limit } from '@grammyjs/ratelimiter';
-import schedule from 'node-schedule';
-import {
+const { limit } = require('@grammyjs/ratelimiter');
+const schedule = require('node-schedule');
+const {
   Order,
   User,
   PendingPayment,
   Community,
   Dispute,
   Config,
-} from '../models';
-import { getCurrenciesWithPrice, deleteOrderFromChannel } from '../util';
-import {
+} = require('../models');
+const { getCurrenciesWithPrice, deleteOrderFromChannel } = require('../util');
+const {
   commandArgsMiddleware,
   stageMiddleware,
   userMiddleware,
   adminMiddleware,
   superAdminMiddleware,
-} from './middleware';
-import ordersActions from './ordersActions';
-import CommunityModule from './modules/community';
-import LanguageModule from './modules/language';
-import NostrModule from './modules/nostr';
-import OrdersModule from './modules/orders';
-import UserModule from './modules/user';
-import DisputeModule from './modules/dispute';
-import {
+} = require('./middleware');
+const ordersActions = require('./ordersActions');
+const CommunityModule = require('./modules/community');
+const LanguageModule = require('./modules/language');
+const NostrModule = require('./modules/nostr');
+const OrdersModule = require('./modules/orders');
+const UserModule = require('./modules/user');
+const DisputeModule = require('./modules/dispute');
+const {
   takebuy,
   takesell,
   rateUser,
@@ -39,35 +41,31 @@ import {
   cancelOrder,
   fiatSent,
   release,
-} from './commands';
-import {
+} = require('./commands');
+const {
   settleHoldInvoice,
   cancelHoldInvoice,
   payToBuyer,
   isPendingPayment,
   subscribeInvoice,
-} from '../ln';
-import {
+} = require('../ln');
+const {
   validateUser,
   validateParams,
   validateObjectId,
   validateInvoice,
   validateLightningAddress,
-} from './validations';
-import messages from './messages';
-import {
+} = require('./validations');
+const messages = require('./messages');
+const {
   attemptPendingPayments,
   cancelOrders,
   deleteOrders,
   calculateEarnings,
   attemptCommunitiesPendingPayments,
   deleteCommunity,
-} from '../jobs';
-import logger from '../logger';
-import { Message } from 'typegram'
-
-import { Model, Document } from 'mongoose';
-import { UserDocument } from '../models/user'
+} = require('../jobs');
+const logger = require('../logger');
 
 export interface MyContext extends Context {
   match: Array<string> | null;
