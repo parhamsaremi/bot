@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose, { Document, Schema } from 'mongoose';
 
 const DisputeSchema = new mongoose.Schema({
   initiator: { type: String, required: true },
