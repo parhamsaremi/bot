@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose, { Document, Schema } from 'mongoose';
 
 const OrderChannelSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
@@ -13,11 +13,11 @@ const usernameIdSchema = new mongoose.Schema({
   username: { type: String, required: true, trim: true },
 });
 
-const arrayLimits = val => {
+const arrayLimits = (val: any) => {
   return val.length > 0 && val.length <= 2;
 };
 
-const currencyLimits = val => {
+const currencyLimits = (val: any) => {
   return val.length > 0 && val.length < 10;
 };
 
