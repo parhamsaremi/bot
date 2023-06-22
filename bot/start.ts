@@ -2,6 +2,7 @@ import { Telegraf, session, Context } from 'telegraf';
 import { I18n, I18nContext } from '@grammyjs/i18n';
 import { Message } from 'typegram'
 import { UserDocument } from '../models/user'
+import { FilterQuery } from 'mongoose';
 
 const { limit } = require('@grammyjs/ratelimiter');
 const schedule = require('node-schedule');
@@ -74,40 +75,49 @@ export interface MainContext extends Context {
   admin: UserDocument;
 }
 
+interface OrderQuery {
+  status?: string;
+  buyer_id?: string;
+  seller_id?: string;
+}
+
 const askForConfirmation = async (user: UserDocument, command: string) => {
   try {
-    const where = {
-      $and: [],
-    };
-
     if (command === '/cancel') {
-      where.$and.push({
-        $or: [{ buyer_id: user._id }, { seller_id: user._id }],
-      });
-      where.$and.push({
-        $or: [
-          { status: 'ACTIVE' },
-          { status: 'PENDING' },
-          { status: 'FIAT_SENT' },
-          { status: 'DISPUTE' },
-        ],
-      });
+      const where: FilterQuery<OrderQuery> = {
+        $and: [
+          { $or: [{ buyer_id: user._id }, { seller_id: user._id }] },
+          {
+            $or: [
+              { status: 'ACTIVE' },
+              { status: 'PENDING' },
+              { status: 'FIAT_SENT' },
+              { status: 'DISPUTE' },
+            ],
+          },
+        ]
+      };
       const orders = await Order.find(where);
       return orders;
     } else if (command === '/fiatsent') {
-      where.$and.push({ buyer_id: user._id });
-      where.$and.push({ status: 'ACTIVE' });
+      const where: FilterQuery<OrderQuery> = {
+        $and: [{ buyer_id: user._id }, { status: 'ACTIVE' }]
+      };
       const orders = await Order.find(where);
       return orders;
     } else if (command === '/release') {
-      where.$and.push({ seller_id: user._id });
-      where.$and.push({
-        $or: [
-          { status: 'ACTIVE' },
-          { status: 'FIAT_SENT' },
-          { status: 'DISPUTE' },
-        ],
-      });
+      const where: FilterQuery<OrderQuery> = {
+        $and: [
+          { seller_id: user._id },
+          {
+            $or: [
+              { status: 'ACTIVE' },
+              { status: 'FIAT_SENT' },
+              { status: 'DISPUTE' },
+            ],
+          },
+        ]
+      };
       const orders = await Order.find(where);
       return orders;
     }
